@@ -1,0 +1,48 @@
+<!-- Writened by Petori in 2018/4/17 -->
+<launch>
+  <arg name="limited" default="false"/>
+  <!-- robot model -->
+  <param unless="$(arg limited)" name="robot_description" command="$(find xacro)/xacro.py '$(find ur_description)/urdf/uu_robot.urdf.xacro'" />
+  <param if="$(arg limited)" name="robot_description" command="$(find xacro)/xacro.py '$(find ur_description)/urdf/uu_robot.urdf.xacro'" />
+
+<group ns="left">
+
+   <arg name="robot_ip" default="192.168.0.103"/>
+   <arg name="port" default="50001"/>
+   <arg name="min_payload"  default="0.0"/>
+   <arg name="max_payload"  default="5.0"/>
+   <arg name="prefix" default="left_" />
+  <include file="$(find ur_modern_driver)/launch/ur5_bringup_uu.launch">
+   <arg name="limited" value="$(arg limited)"/>
+   <arg name="robot_ip" value="$(arg robot_ip)"/>
+   <arg name="port" value="$(arg port)"/>
+   <arg name="min_payload"  value="$(arg min_payload)"/>
+   <arg name="max_payload"  value="$(arg max_payload)"/>
+   <arg name="prefix" value="$(arg prefix)"/>
+  </include>
+</group>
+
+<group ns="right">
+
+   <arg name="robot_ip" default="192.168.0.107"/>
+
+   <arg name="port" default="50002"/>
+
+   <arg name="min_payload"  default="0.0"/>
+   <arg name="max_payload"  default="5.0"/>
+   <arg name="prefix" default="right_" />
+  <include file="$(find ur_modern_driver)/launch/ur5_bringup_uu.launch">
+   <arg name="limited" value="$(arg limited)"/>
+   <arg name="robot_ip" value="$(arg robot_ip)"/>
+   <arg name="port" value="$(arg port)"/>
+   <arg name="min_payload"  value="$(arg min_payload)"/>
+   <arg name="max_payload"  value="$(arg max_payload)"/>
+   <arg name="prefix" value="$(arg prefix)"/>
+  </include>
+</group>
+
+  <!-- Do not launch the rviz node .Petori. -->
+  <!--
+  <node name="rviz_uu_robot" pkg="rviz" type="rviz" args="-d $(find uu_dual_config)/config/uu_robot.rviz"/>
+  -->
+</launch>

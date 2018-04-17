@@ -8,7 +8,8 @@
   <xacro:include filename="$(find uu_robot)/description/common/common.gazebo.xacro" />
 
   <!-- include urdf -->
-  <xacro:include filename="$(find uu_robot)/description/ur5/ur5.urdf.xacro" />
+  <xacro:include filename="$(find ur_description)/urdf/ur5.urdf.xacro" />
+  <xacro:include filename="$(find uu_robot)/description/sensor/optoforce.urdf.xacro" />
 
   <!-- robot arm : display the arm by setting prefix -->
   <xacro:ur5_robot prefix="left_" joint_limited="false"/>
