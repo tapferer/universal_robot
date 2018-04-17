@@ -14,8 +14,9 @@ class MoveItDemo:
   rospy.init_node('moveit_demo', anonymous=True)
 
   dual_arms = moveit_commander.MoveGroupCommander('dual_arms')
-
-  f = open("/home/petori/catkin_ws/src/universal_robot/uu_dual_config/src/d.txt")
+  
+  # 零位时机器人底座指向左侧．左为机器人i，右为j
+  f = open("/home/petori/catkin_ws/src/universal_robot/uu_dual_config/src/simpleCarry.txt")
   #w = open("/home/yangyifan/桌面/e.txt","w")
   for line in f:
       a = line
