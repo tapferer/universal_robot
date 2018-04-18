@@ -6,7 +6,11 @@
 - roslaunch ur_gazebo double_ur5.launch
 - rosrun ur_modern_driver uu_simple_move.py
 
-## 双机实物控制
+## 双机实物控制和规划-gazebo+testmove
+- roslaunch ur_bringup double_ur5_bringup.launch
+- rosrun ur_modern_driver uu_simple_move.py
+
+## 双机实物控制和规划-moveit
 - roslaunch uu_robot uu_double.launch
 - roslaunch uu_dual_config move_group.launch
 - rosrun uu_robot listener_left
