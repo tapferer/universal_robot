@@ -1,4 +1,3 @@
-<!-- Writened by Petori in 2018/4/17 -->
 <launch>
   <arg name="limited" default="false"/>
   <!-- robot model -->
@@ -41,10 +40,6 @@
   </include>
 </group>
 
-  <!-- Do not launch the rviz node .Petori. -->
-  <!--
-  <node name="rviz_uu_robot" pkg="rviz" type="rviz" args="-d $(find uu_dual_config)/config/uu_robot.rviz"/>
-  -->
-  <node name="arm_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/>
- 
+
+  <node name="rviz_uu_robot" pkg="rviz" type="rviz" args="-d $(find uu_robot)/config/uu_robot.rviz"/>
 </launch>

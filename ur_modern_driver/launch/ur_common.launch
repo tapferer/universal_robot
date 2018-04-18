@@ -9,6 +9,7 @@
 <launch>
   <!-- robot_ip: IP-address of the robot's socket-messaging server -->
   <arg name="robot_ip" />
+  <arg name="port" />
   <arg name="min_payload" />
   <arg name="max_payload" />
   <arg name="prefix" default="" />
@@ -19,10 +20,12 @@
   <!-- The max_velocity parameter is only used for debugging in the ur_driver. It's not related to actual velocity limits -->
   <arg name="max_velocity" default="10.0"/> <!-- [rad/s] -->
 
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+  <node name="$(arg prefix)robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
+  <remap from="joint_states" to="$(arg prefix)joint_states"/>
+  </node>
 
   <!-- driver -->
-  <node name="ur_driver" pkg="ur_modern_driver" type="ur_driver" output="screen">
+  <node name="$(arg prefix)ur_driver" pkg="ur_modern_driver" type="ur_driver" output="screen">
   <!-- copy the specified IP address to be consistant with ROS-Industrial spec. -->
     <param name="prefix" type="str" value="$(arg prefix)" />
     <param name="robot_ip_address" type="str" value="$(arg robot_ip)" />
@@ -32,5 +35,7 @@
     <param name="servoj_time" type="double" value="$(arg servoj_time)" />
 	<param name="base_frame" type="str" value="$(arg base_frame)"/>
     <param name="tool_frame" type="str" value="$(arg tool_frame)"/>
+    <param name="reverse_port" type="int" value="$(arg port)" />
+    <remap from="follow_joint_trajectory" to="$(arg prefix)follow_joint_trajectory"/>
   </node>
 </launch>
