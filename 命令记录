@@ -1,0 +1,44 @@
+## 双机rviz仿真
+- roslaunch uu_dual_config demo.launch
+- rosrun uu_dual_config double_moveit_file.py
+
+## 双机gazebo仿真
+- roslaunch ur_gazebo double_ur5.launch
+- rosrun ur_modern_driver uu_simple_move.py
+
+## 双机实物控制
+- roslaunch uu_robot uu_double.launch
+- roslaunch uu_dual_config move_group.launch
+- rosrun uu_robot listener_left
+- rosrun uu_robot listener_right
+- roslaunch uu_double_config moveit_rviz.launch
+
+## 单机实物控制
+- roslaunch ur_bringup ur5_bringup.launch robot_ip:=IP_OF_THE_ROBOT
+- rosrun ur_modern_driver double_moveit_file.py
+
+## 启动Gazebo演示仿真效果
+- roslaunch ur_gazebo ur5.launch limited:=true
+- rosrun ur_modern_driver test_move.py (用ur_driver也行)
+
+## 单独启动rviz演示仿真效果
+- roslaunch ur5_moveit_config demo.launch
+- 不行
+
+## 启动gazebo和rviz一起演示仿真效果
+- roslaunch ur_gazebo ur5.launch limited:=true
+- roslaunch ur5_moveit_config ur5_moveit_planning_execution.launch sim:=true limited:=true
+- roslaunch ur5_moveit_config moveit_rviz.launch config:=true
+- rosrun ur_driver test_move.py
+- 或者rosrun ur_modern_driver simple_move.py
+
+## 单独加载ur5的模型到Rviz
+- roslaunch ur_description ur5_upload.launch
+
+## 创建一个ROS包
+- catkin_create_pkg have_a_try std_msgs rospy roscpp (在catkin_ws/src目录下运行)
+- 然后检查修改package.xml
+- 检查修改CMakeLists.txt
+
+## 当遇到git的permission denied(publickey)时
+- ssh-add ~/.ssh/id_rsa
