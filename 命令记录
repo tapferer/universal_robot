@@ -1,27 +1,31 @@
+##　bugshoot
+- 当机器人面板在＂回零＂界面时，完整通信可以建立，但是机器人无法执行控制器的数据（可以利用这点测试机器人的连接和数据发送，却不实际运动机器人）
+
 ## 双机rviz仿真
 - roslaunch uu_dual_config demo.launch
 - rosrun uu_dual_config double_moveit_file.py
 
 ## 双机gazebo仿真
-- roslaunch ur_gazebo double_ur5.launch
+- roslaunch ur_gazebo double_ur5.launch(或者roslaunch uu_robot uu_double.launch)
 - rosrun ur_modern_driver uu_simple_move.py
 
 ## 双机实物控制和规划-gazebo+testmove
-- roslaunch ur_bringup double_ur5_bringup.launch
-- rosrun ur_modern_driver uu_simple_move.py
+- roslaunch ur_bringup double_ur5_bringup.launch(或者roslaunch uu_robot uu_double.launch)
+- rosrun ur_modern_driver double_ur5.py
 
 ## 双机实物控制和规划-moveit
 - roslaunch uu_robot uu_double.launch
 - roslaunch uu_dual_config move_group.launch
 - rosrun uu_robot listener_left
 - rosrun uu_robot listener_right
-- roslaunch uu_double_config moveit_rviz.launch
+- 拖动移动（成功率极低）roslaunch uu_double_config moveit_rviz.launch
+- 或者采用文本给点方式 rosrun uu_dual_config double_moveit_file.py
 
 ## 单机实物控制
 - roslaunch ur_bringup ur5_bringup.launch robot_ip:=IP_OF_THE_ROBOT
 - rosrun ur_modern_driver double_moveit_file.py
 
-## 启动Gazebo演示仿真效果
+## 单机Gazebo仿真
 - roslaunch ur_gazebo ur5.launch limited:=true
 - rosrun ur_modern_driver test_move.py (用ur_driver也行)
 
