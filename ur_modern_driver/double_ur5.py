@@ -57,7 +57,7 @@ def move():
     gr.trajectory.joint_names = R_JOINT_NAMES
 
     try:
-        left_joint_states = rospy.wait_for_message("/left/left_joint_states", JointState)
+        left_joint_states = rospy.wait_for_message("/left/joint_states", JointState)
         left_joints_pos = left_joint_states.position
         gl.trajectory.points = [
             JointTrajectoryPoint(positions=left_joints_pos, velocities=[0]*6, time_from_start=rospy.Duration(0.0)),
@@ -75,8 +75,8 @@ def move():
             JointTrajectoryPoint(positions=L_Q12, velocities=[0]*6, time_from_start=rospy.Duration(13.0)),
             JointTrajectoryPoint(positions=L_Q13, velocities=[0]*6, time_from_start=rospy.Duration(14.0))]
 
-        right_joint_states = rospy.wait_for_message("/right/right_joint_states", JointState)
-        right_joints_pos = left_joint_states.position
+        right_joint_states = rospy.wait_for_message("/right/joint_states", JointState)
+        right_joints_pos = right_joint_states.position
         gr.trajectory.points = [
             JointTrajectoryPoint(positions=right_joints_pos, velocities=[0]*6, time_from_start=rospy.Duration(0.0)),
             JointTrajectoryPoint(positions=R_Q1, velocities=[0]*6, time_from_start=rospy.Duration(2.0)),
