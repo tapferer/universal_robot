@@ -14,9 +14,9 @@ from math import pi
 
 JOINT_NAMES = ['shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint',
                'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint']
-Q1 = [2.2,0,-1.57,0,0,0]
-Q2 = [1.5,0,-1.57,0,0,0]
-Q3 = [1.5,-0.2,-1.57,0,0,0]
+Q1 = [0,-1.57,0,-1.57,0,0]
+Q2 = [0.5,-1.57,0,-1.57,0,0]
+Q3 = [1,-1.57,0,-1.57,0,0]
     
 client = None
 
@@ -46,7 +46,7 @@ def main():
     global client
     try:
         rospy.init_node("simple_move", anonymous=True, disable_signals=True)
-        client = actionlib.SimpleActionClient('arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+        client = actionlib.SimpleActionClient('follow_joint_trajectory', FollowJointTrajectoryAction)
         print "Waiting for server..."
         client.wait_for_server()
         print "Connected to server"

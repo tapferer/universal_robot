@@ -25,8 +25,8 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "ur_arm_controller");
 
-  std::string host = std::string("192.168.1.55");
-  int port = 30002;
+  std::string host = std::string("192.168.0.107");
+  int port = 30003;
 
   ros::param::get("host", host);
   ros::param::get("port", port);
