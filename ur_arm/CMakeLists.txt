@@ -173,6 +173,10 @@ add_executable(
   vel_control
   src/vel_control.cpp
 )
+add_executable(
+  collision_detect
+  src/collision_detect.cpp
+)
 target_link_libraries(
   node
   ${catkin_LIBRARIES}
@@ -181,13 +185,20 @@ target_link_libraries(
   vel_control
   ${catkin_LIBRARIES}
 )
-
+target_link_libraries(
+  collision_detect
+  ${catkin_LIBRARIES}
+)
 add_dependencies(
   node
   ${catkin_EXPORTED_TARGETS}
 )
 add_dependencies(
   vel_control
+  ${catkin_EXPORTED_TARGETS}
+)
+add_dependencies(
+  collision_detect
   ${catkin_EXPORTED_TARGETS}
 )
 ## Rename C++ executable without prefix
