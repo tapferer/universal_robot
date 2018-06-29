@@ -13,11 +13,14 @@
 #include <unistd.h>   // for function usleep(microseconds)
 
 // Global Variables
-int Frec = 0;
-std::ofstream fout("data/test.txt");
+int monitorTime = 0;
+int monitorFrec = 50;
+bool torquePub = false;
+ur_arm::Joints exTorque;
 
 // Function definition
-void recordToTxt(sensor_msgs::JointState curState);// The callback func for subscriber"recorder"
+void getCurRobotState(sensor_msgs::JointState curState);// The callback func for subscriber"monitor", get cur pos/vel/eff values.
+ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> curVel, std::vector<double> curEff);
 
 // Main
 int main(int argc, char **argv)
@@ -27,98 +30,53 @@ int main(int argc, char **argv)
   ros::AsyncSpinner spinner(1);
   spinner.start();
 
-  ros::Publisher chatter_pub = n.advertise<ur_arm::Joints>("/ur_arm/cmd_joint_vel", 1);
-  ros::Subscriber recorder = n.subscribe<sensor_msgs::JointState>("/joint_states", 1, recordToTxt);// Subscribing the joint_states and record them.
-  usleep(400000);//Leave 0.4s for building the subscriber
-  ur_arm::Joints vel_move;
-  ur_arm::Joints vel_static;
+  ros::Publisher collision_pub = n.advertise<ur_arm::Joints>("/external_torque",1);
+  ros::Subscriber monitor = n.subscribe<sensor_msgs::JointState>("/joint_states", 1, getCurRobotState);// Subscribing the joint_states for collision compute.
+  usleep(400000);//Leave 0.4s for building the publisher and subscriber
 
-  vel_move.base = 0;
-  vel_move.shoulder = 0;
-  vel_move.elbow = 0.0;
-  vel_move.wrist1 = 0.0;
-  vel_move.wrist2 = 0.0;
-  vel_move.wrist3 = 0.0;
-
-  vel_static.base = 0;
-  vel_static.shoulder = 0.0;
-  vel_static.elbow = 0;
-  vel_static.wrist1 = 0;
-  vel_static.wrist2 = 0;
-  vel_static.wrist3 = 0;
-
-  for(int i=0;i<100;i++)
+  while(ros::ok())
   {
-      vel_move.base = vel_move.base + 0.02;
-      chatter_pub.publish(vel_move);
-      ROS_INFO("i = [%d].", i+1);
-      usleep(20000);//0.02s
-      // Need I leave some time for the Publisher to publish msgs?
+      if(torquePub == true)
+      {
+          collision_pub.publish(exTorque);
+          //usleep(20000);
+      }
+      else{};
   }
-
-  ROS_INFO("The robot will stop from now.");
-  chatter_pub.publish(vel_static);
-  ROS_INFO("Stopped.");
-  fout.close();
-
   return 0;
 }
 
-void recordToTxt(sensor_msgs::JointState curState)
+void getCurRobotState(sensor_msgs::JointState curState)
 {
-    // After test, I know that this function is called 50 times per second.
-    std::vector<std::string> curName;
-    std::vector<double> curPos;
-    std::vector<double> curVel;
-    std::vector<double> curEff;
-
-    curName = curState.name;
-    curPos = curState.position;
-    curVel = curState.velocity;
-    curEff = curState.effort;
-
-    // I dont record these data because I dont use them.
-    fout<<"header:"<<std::endl;
-    fout<<"  seq: "<<"000000"<<std::endl;
-    fout<<"  stamp:"<<std::endl;
-    fout<<"    secs: "<<"000000"<<std::endl;
-    fout<<"    nsecs: "<<"000000"<<std::endl;
-    fout<<"  frame_id: \'\'"<<std::endl;
-
-    // write the name;
-    fout <<"name: [";
-    for(int i=0; i<(curName.size()-1); ++i)
+    monitorTime++;
+    if (monitorTime==(125/monitorFrec))
     {
-      fout <<'\'';
-      fout << curName[i] << "\', ";
+        monitorTime = 0;
+        std::vector<double> curPos;
+        std::vector<double> curVel;
+        std::vector<double> curEff;
+        curPos = curState.position;
+        curVel = curState.velocity;
+        curEff = curState.effort;
+        exTorque = computeExTorque(curPos, curVel, curEff);
+        torquePub = true;
+        usleep(10000);
     }
-    fout<<'\''<<curName[curName.size()-1]<<'\''<<']'<<std::endl;
-
-    // write the position;
-    fout <<"position: [";
-    for(int i=0; i<(curPos.size()-1); ++i)
+    else
     {
-      fout << curPos[i] << ", ";
+        torquePub = false;
     }
-    fout<<curPos[curPos.size()-1]<<']'<<std::endl;
+}
 
-    // write the velocity
-    fout <<"velocity: [";
-    for(int i=0; i<(curVel.size()-1); ++i)
-    {
-      fout << curVel[i] <<", ";
-    }
-    fout<<curVel[curVel.size()-1]<<']'<<std::endl;
-
-    // write the effort
-    fout <<"effort: [";
-    for(int i=0; i<(curEff.size()-1); ++i)
-    {
-      fout << curEff[i] << ", ";
-    }
-    fout<<curEff[curEff.size()-1]<<']'<<std::endl;
-    fout<<"---"<<std::endl;
-
-    ROS_INFO("I heard [%d] msgs.", Frec);
-    Frec++;
+ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> curVel, std::vector<double> curEff)
+{
+    // toliaezi give the curEff to exTorque
+    ur_arm::Joints torque;
+    torque.base = curEff[0];
+    torque.shoulder = curEff[1];
+    torque.elbow = curEff[2];
+    torque.wrist1 = curEff[3];
+    torque.wrist2 = curEff[4];
+    torque.wrist3 = curEff[5];
+    return torque;
 }
