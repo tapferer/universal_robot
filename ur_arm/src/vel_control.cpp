@@ -20,6 +20,7 @@ std::vector<double> curPos;
 std::vector<double> curVel;
 std::vector<double> curEff;
 ur_arm::Joints velNew;
+ur_arm::Joints velInitial;
 ur_arm::Joints velStop;
 
 // Function definition
@@ -43,17 +44,15 @@ int main(int argc, char **argv)
   ros::Subscriber collisionCheck = n.subscribe<ur_arm::Joints>("/external_torque", 1, velCompute);
   usleep(400000);//Leave 0.4s for building the subscriber
 
-  ur_arm::Joints velInitial;
-  ur_arm::Joints velStop;
   setVelInitial();
   setVelStop();
 
   vel_pub.publish(velInitial);
-  velNew = velInitial;
+
   while(ros::ok())
   {
       vel_pub.publish(velNew);
-      usleep(2000);
+      //usleep(2000);
   }
   fout.close();
 
@@ -62,12 +61,12 @@ int main(int argc, char **argv)
 
 void setVelInitial()
 {
-    velStop.base = 0;
-    velStop.shoulder = 0.0;
-    velStop.elbow = 0;
-    velStop.wrist1 = 0;
-    velStop.wrist2 = 0;
-    velStop.wrist3 = 0;
+    velInitial.base = 0.0;
+    velInitial.shoulder = 0.0;
+    velInitial.elbow = 0;
+    velInitial.wrist1 = 0;
+    velInitial.wrist2 = 0;
+    velInitial.wrist3 = 0;
 }
 
 void setVelStop()
@@ -138,6 +137,7 @@ void recordToTxt(sensor_msgs::JointState curState)
 
 void velCompute(ur_arm::Joints exTorque)
 {
+
     ur_arm::Joints torque;
     std::vector<double> pos;
     std::vector<double> vel;
@@ -149,36 +149,44 @@ void velCompute(ur_arm::Joints exTorque)
     torque = exTorque;
     pos = curPos;
     vel = curVel;
-    for(int i=0; i<(vel.size()); ++i)
-    {
-       cartesianDeltaVel[i] = 0;
-    }
-//    // x translation
-//    cartesianDeltaVel[0] = 0.01;
-//    // y translation
-//    cartesianDeltaVel[1] = 0.01;
+
+    // x translation
+    cartesianDeltaVel.push_back(0);
+    // y translation
+    cartesianDeltaVel.push_back(0);
     // z translation
-    cartesianDeltaVel[2] = 0.01;
-    newVel = vel;
+    cartesianDeltaVel.push_back(0.003);
+    cartesianDeltaVel.push_back(0);
+    cartesianDeltaVel.push_back(0);
+    cartesianDeltaVel.push_back(0);
+
 
     // Rule definition
-    rule = (abs(torque.shoulder)>3);
+    rule = (fabs(torque.shoulder)>3.5);
     // end...
-    if (rule)
+    int i = 0;
+    if (rule&(i<1000))
     {
         // let the robot stop
         velNew= velStop;
     }
     else
     {
+        usleep(2000);
+        i++;
         // continue the cartesian moving rule
-
         // Caculate the joints deltaVel by Jacobian Matrix
         deltaVel = deltaVelCacByJacob(pos, cartesianDeltaVel);
+        std::vector<double>  mid;
         for(int i=0; i<(vel.size()); ++i)
         {
-            newVel[i] = vel[i] + deltaVel[i];
+            double midvalue;
+            midvalue= vel[i] + deltaVel[i];
+            mid.push_back(midvalue);
         }
+
+        newVel.swap(mid);
+        //mid.clear();
 
         velNew.base = newVel[0];
         velNew.shoulder = newVel[1];
@@ -196,10 +204,10 @@ std::vector<double> deltaVelCacByJacob(std::vector<double> pos, std::vector<doub
     double d1=0.0892,d4=0.109,d5=0.093,d6=0.082;
     double a2=-0.425,a3=-0.39243;
     Eigen::MatrixXf Jacob(6,6);
+    Eigen::MatrixXf JacobInv(6,6);
     Eigen::MatrixXf cdvel(6,1);
     Eigen::MatrixXf velResult(6,1);
     std::vector<double> deltaVel;
-
     for (int i=0;i<6;i++)
     {
         cdvel(i,0) = cartesianDeltaVel[i];
@@ -263,19 +271,21 @@ std::vector<double> deltaVelCacByJacob(std::vector<double> pos, std::vector<doub
     Jacob(5,4) = s4*(c2*s3 + c3*s2) - c4*(c2*c3 - s2*s3);
     Jacob(5,5) = -s5*(c4*(c2*s3 + c3*s2) + s4*(c2*c3 - s2*s3));
 
-    velResult = Jacob.inverse()*cdvel;
-
+    JacobInv = Jacob.inverse();
+    velResult = JacobInv*cdvel;
+    std::vector<double> mid;
     for (int i=0;i<6;i++)
     {
-        deltaVel[i] = velResult(i,0);
+        mid.push_back(velResult(i,0));
     }
-
+    deltaVel.swap(mid);
+    //mid.clear();
     return deltaVel;
 }
 
 double reZero(double x)
 {
-    if(abs(x)<10e-10)
+    if(fabs(x)<10e-10)
     {
         x = 0;
     }
