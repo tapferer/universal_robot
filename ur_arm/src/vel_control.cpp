@@ -5,7 +5,6 @@
 #include <vector>
 #include <string>
 #include <math.h>
-#include <Eigen/Dense>
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <sensor_msgs/JointState.h>
@@ -22,6 +21,7 @@ std::vector<double> curEff;
 geometry_msgs::Twist velNew;
 geometry_msgs::Twist velInitial;
 geometry_msgs::Twist velStop;
+bool collisionHappen = false;
 
 // Function definition
 void recordToTxt(sensor_msgs::JointState curState);// The callback func for subscriber"recorder"
@@ -51,7 +51,10 @@ int main(int argc, char **argv)
   while(ros::ok())
   {
       vel_pub.publish(velNew);
-      sleep(1);
+      if(collisionHappen)
+      {
+          sleep(5);
+      }
   }
   fout.close();
 
@@ -111,17 +114,19 @@ void velCompute(ur_arm::Joints exTorque)
     torque = exTorque;
 
     // Rule definition
-    rule = (fabs(torque.shoulder)>3.5);
+    rule = ((torque.shoulder>1.5) || (torque.elbow>1.5));
     // end...
 
     if (rule)
     {
         // let the robot stop
         velNew= velStop;
+        collisionHappen = true;
     }
     else
     {
         velNew = velInitial;
+        collisionHappen = false;
     }
 }
 
