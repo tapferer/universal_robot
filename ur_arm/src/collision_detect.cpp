@@ -14,9 +14,6 @@
 #include <unistd.h>   // for function usleep(microseconds)
 
 // Global Variables
-int monitorTime = 0;
-int monitorFrec = 125;
-bool torquePub = false;
 double max = 0;
 ur_arm::Joints exTorque;
 Eigen::MatrixXf exTorque2(2,1);
@@ -40,14 +37,9 @@ int main(int argc, char **argv)
   ros::Subscriber monitor = n.subscribe<sensor_msgs::JointState>("/joint_states", 1, getCurRobotState);// Subscribing the joint_states for collision compute.
   usleep(400000);//Leave 0.4s for building the publisher and subscriber
   setInitialExTorque();
-
   while(ros::ok())
   {
-      if(torquePub == true)
-      {
-          collision_pub.publish(exTorque);
-      }
-      else{};
+      collision_pub.publish(exTorque);
       usleep(8000);
   }
   return 0;
@@ -69,23 +61,13 @@ void setInitialExTorque()
 
 void getCurRobotState(sensor_msgs::JointState curState)
 {
-    monitorTime++;
-    if (1) //if (monitorTime==(125/monitorFrec))
-    {
-       // monitorTime = 0;
-        std::vector<double> curPos;
-        std::vector<double> curVel;
-        std::vector<double> curEff;
-        curPos = curState.position;
-        curVel = curState.velocity;
-        curEff = curState.effort;
-        exTorque = computeExTorque(curPos, curVel, curEff);
-        torquePub = true;
-    }
-    else
-    {
-        torquePub = false;
-    }
+    std::vector<double> curPos;
+    std::vector<double> curVel;
+    std::vector<double> curEff;
+    curPos = curState.position;
+    curVel = curState.velocity;
+    curEff = curState.effort;
+    exTorque = computeExTorque(curPos, curVel, curEff);
 }
 
 ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> curVel, std::vector<double> curEff)
@@ -113,7 +95,7 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
     double u1_2=0.5823;
     double u2_2=0.6754;
     double K = 10;
-    double dt = 1/double(monitorFrec);
+    double dt = 0.008;
 
     pos2(0,0) = curPos[1];
     pos2(1,0) = curPos[2];
@@ -149,7 +131,7 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
         max = fabs(torque.shoulder);
     }
     else if(fabs(torque.elbow) > max)
-        {
+    {
         max = fabs(torque.elbow);
     }
     torque.wrist1 = 0;
@@ -162,7 +144,8 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
 
 double reZero(double x)
 {
-    if (fabs(x)<0.1)
+    // vel noise is 0.02 rad/s.
+    if (fabs(x)<0.02)
     {
         x = 0;
     }

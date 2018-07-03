@@ -13,7 +13,6 @@
 #include <unistd.h>   // for function usleep(microseconds)
 
 // Global Variables
-int Times = 0;
 std::ofstream fout("data/test.txt");
 std::vector<double> curPos;
 std::vector<double> curVel;
@@ -51,8 +50,7 @@ int main(int argc, char **argv)
   while(ros::ok())
   {
       vel_pub.publish(velNew);
-      Times ++;
-      ROS_INFO("I heard [%d] msgs.", collisionHappen);
+      ROS_INFO("Collision state is [%d].", collisionHappen);
       if(collisionHappen)
       {
           sleep(5);
@@ -63,7 +61,6 @@ int main(int argc, char **argv)
       }
   }
   fout.close();
-
   return 0;
 }
 
@@ -113,7 +110,6 @@ void setVelStop()
 
 void velCompute(ur_arm::Joints exTorque)
 {
-
     ur_arm::Joints torque;
     bool rule = false;// the collision judging rule.
 
@@ -121,7 +117,6 @@ void velCompute(ur_arm::Joints exTorque)
     // Rule definition
     rule = ((torque.shoulder>1.5) || (torque.elbow>1.5));
     // end...
-
     if (rule)
     {
         // let the robot stop
