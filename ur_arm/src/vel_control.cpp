@@ -13,7 +13,7 @@
 #include <unistd.h>   // for function usleep(microseconds)
 
 // Global Variables
-int Frec = 0;
+int Times = 0;
 std::ofstream fout("data/test.txt");
 std::vector<double> curPos;
 std::vector<double> curVel;
@@ -51,9 +51,15 @@ int main(int argc, char **argv)
   while(ros::ok())
   {
       vel_pub.publish(velNew);
+      Times ++;
+      ROS_INFO("I heard [%d] msgs.", collisionHappen);
       if(collisionHappen)
       {
           sleep(5);
+      }
+      else
+      {
+           usleep(8000);
       }
   }
   fout.close();
@@ -112,7 +118,6 @@ void velCompute(ur_arm::Joints exTorque)
     bool rule = false;// the collision judging rule.
 
     torque = exTorque;
-
     // Rule definition
     rule = ((torque.shoulder>1.5) || (torque.elbow>1.5));
     // end...
@@ -181,7 +186,4 @@ void recordToTxt(sensor_msgs::JointState curState)
     }
     fout<<curEff[curEff.size()-1]<<']'<<std::endl;
     fout<<"---"<<std::endl;
-
-    ROS_INFO("I heard [%d] msgs.", Frec);
-    Frec++;
 }

@@ -17,6 +17,7 @@
 int monitorTime = 0;
 int monitorFrec = 125;
 bool torquePub = false;
+double max = 0;
 ur_arm::Joints exTorque;
 Eigen::MatrixXf exTorque2(2,1);
 Eigen::MatrixXf A(2,1);
@@ -45,9 +46,9 @@ int main(int argc, char **argv)
       if(torquePub == true)
       {
           collision_pub.publish(exTorque);
-          //usleep(20000);
       }
       else{};
+      usleep(8000);
   }
   return 0;
 }
@@ -71,7 +72,7 @@ void getCurRobotState(sensor_msgs::JointState curState)
     monitorTime++;
     if (1) //if (monitorTime==(125/monitorFrec))
     {
-        monitorTime = 0;
+       // monitorTime = 0;
         std::vector<double> curPos;
         std::vector<double> curVel;
         std::vector<double> curEff;
@@ -112,7 +113,7 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
     double u1_2=0.5823;
     double u2_2=0.6754;
     double K = 10;
-    double dt = 1/monitorFrec;
+    double dt = 1/double(monitorFrec);
 
     pos2(0,0) = curPos[1];
     pos2(1,0) = curPos[2];
@@ -123,7 +124,7 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
 
     Mq(0,0) = m1*l1_star*l1_star + m2*(l1*l1+l1_star*l1_star+2*l1*l1_star*cos(pos2(1,0)));
     Mq(0,1) = m2*(l2_star*l2_star+l1*l1_star*cos(pos2(1,0)));
-    Mq(1,0) = Mq(0,1);
+    Mq(1,0) = m2*(l2_star*l2_star+l1*l1_star*cos(pos2(1,0)));
     Mq(1,1) = m2*l2_star*l2_star;
 
     Cq(0,0) = -m2*l1*l2_star*sin(pos2(1,0))*vel2(1,0);
@@ -134,25 +135,34 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
     Gq(0,0) = -(m1*l1_star+m2*l1)*g*cos(pos2(0,0)) - m2*g*l2_star*cos(pos2(0,0)+pos2(1,0));
     Gq(1,0) = -m2*g*l2_star*cos(pos2(0,0)+pos2(1,0));
 
-    deltaA = (jointTorque2 + Cq*vel2 - Gq - exTorque2) * dt;
+    deltaA = (jointTorque2 + Cq.transpose()*vel2 - Gq - exTorque2) * dt;
     exTorque2 = K*(A + deltaA - Mq*vel2);
 
-    torqueFric(0,0) = u1_1*curEff[1] + u2_1*signed(reZero(curEff[1]));
-    torqueFric(1,0) = u1_2*curEff[2] + u2_2*signed(reZero(curEff[2]));
+    torqueFric(0,0) = u1_1*curVel[1] + u2_1*signed(reZero(curVel[1]));
+    torqueFric(1,0) = u1_2*curVel[2] + u2_2*signed(reZero(curVel[2]));
 
     torque.base = 0;
-    torque.shoulder = fabs(exTorque2(0,0) - torqueFric(0,0));
-    torque.elbow = fabs(exTorque2(1,0) - torqueFric(1,0));
+    torque.shoulder =11* fabs(exTorque2(0,0) - torqueFric(0,0));
+    torque.elbow = 11*fabs(exTorque2(1,0) - torqueFric(1,0));
+    if (fabs(torque.shoulder) > max)
+    {
+        max = fabs(torque.shoulder);
+    }
+    else if(fabs(torque.elbow) > max)
+        {
+        max = fabs(torque.elbow);
+    }
     torque.wrist1 = 0;
     torque.wrist2 = 0;
     torque.wrist3 = 0;
+    ROS_INFO("Max Torque =  [%lf].",max);
 
     return torque;
 }
 
 double reZero(double x)
 {
-    if (fabs(x)<1e-3)
+    if (fabs(x)<0.1)
     {
         x = 0;
     }
