@@ -21,6 +21,8 @@ geometry_msgs::Twist velNew;
 geometry_msgs::Twist velInitial;
 geometry_msgs::Twist velStop;
 bool collisionHappen = false;
+bool rule = false;// the collision judging rule.
+ur_arm::Joints torque;
 
 // Function definition
 void recordToTxt(sensor_msgs::JointState curState);// The callback func for subscriber"recorder"
@@ -44,21 +46,46 @@ int main(int argc, char **argv)
 
   setVelInitial();
   setVelStop();
-
+  velNew = velInitial;
   vel_pub.publish(velInitial);
+  sleep(1);
 
   while(ros::ok())
   {
-      vel_pub.publish(velNew);
-      ROS_INFO("Collision state is [%d].", collisionHappen);
-      if(collisionHappen)
+      // Rule definition
+      rule = ((torque.shoulder>7.5) ||(torque.elbow>7.5));
+      // end...
+      if (rule)
       {
-          sleep(5);
+          collisionHappen = true;
       }
       else
       {
-           usleep(8000);
+          collisionHappen = false;
       }
+      //ROS_INFO("Collision state is [%d].", collisionHappen);
+      if(collisionHappen)
+          {
+          geometry_msgs::Twist oldVel;
+          geometry_msgs::Vector3 linear;
+          geometry_msgs::Vector3 angular;
+
+          oldVel = velNew;
+          linear = oldVel.linear;
+          angular = oldVel.angular;
+
+          linear.x = -linear.x;
+          linear.y = -linear.y;
+          linear.z = -linear.z;
+          angular.x = -angular.x;
+          angular.y = -angular.y;
+          angular.z = -angular.z;
+
+          velNew.linear = linear;
+          velNew.angular = angular;
+          vel_pub.publish(velNew);
+          sleep(1);
+          }
   }
   fout.close();
   return 0;
@@ -71,8 +98,8 @@ void setVelInitial()
     double vx,vy,vz;
     double wx,wy,wz;
     vx = 0;
-    vy = 0;
-    vz = 0.01;
+    vy = -0.005;
+    vz = 0;
     wx = 0;
     wy = 0;
     wz = 0;
@@ -110,24 +137,7 @@ void setVelStop()
 
 void velCompute(ur_arm::Joints exTorque)
 {
-    ur_arm::Joints torque;
-    bool rule = false;// the collision judging rule.
-
     torque = exTorque;
-    // Rule definition
-    rule = ((torque.shoulder>1.5) || (torque.elbow>1.5));
-    // end...
-    if (rule)
-    {
-        // let the robot stop
-        velNew= velStop;
-        collisionHappen = true;
-    }
-    else
-    {
-        velNew = velInitial;
-        collisionHappen = false;
-    }
 }
 
 void recordToTxt(sensor_msgs::JointState curState)
