@@ -177,6 +177,11 @@ add_executable(
   collision_detect
   src/collision_detect.cpp
 )
+add_executable(
+  grinder
+  src/grinder.cpp
+)
+
 target_link_libraries(
   node
   ${catkin_LIBRARIES}
@@ -189,6 +194,11 @@ target_link_libraries(
   collision_detect
   ${catkin_LIBRARIES}
 )
+target_link_libraries(
+  grinder
+  ${catkin_LIBRARIES}
+)
+
 add_dependencies(
   node
   ${catkin_EXPORTED_TARGETS}
@@ -199,6 +209,10 @@ add_dependencies(
 )
 add_dependencies(
   collision_detect
+  ${catkin_EXPORTED_TARGETS}
+)
+add_dependencies(
+  grinder
   ${catkin_EXPORTED_TARGETS}
 )
 ## Rename C++ executable without prefix
