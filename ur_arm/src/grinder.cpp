@@ -22,6 +22,8 @@ geometry_msgs::Twist velFoward;
 geometry_msgs::Twist velBack;
 geometry_msgs::Twist velToPointMid;
 geometry_msgs::Twist velToPointEnd;
+geometry_msgs::Twist velToPointMidInv;
+geometry_msgs::Twist velToPointEndInv;
 geometry_msgs::Twist velStop;
 bool collisionHappen = false;
 bool rule = false;// the collision judging rule.
@@ -36,6 +38,8 @@ void setVelFoward();
 void setVelBack();
 void setVelToPointMid();
 void setVelToPointEnd();
+void setVelToPointMidInv();
+void setVelToPointEndInv();
 void setVelStop();
 double reZero(double x);
 geometry_msgs::Twist fkine(std::vector<double> pos);
@@ -84,10 +88,10 @@ int main(int argc, char **argv)
   {
       rule1 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque));
   }
-  startPoint = curPos;
+  startPoint = curPos;// start position
   vel_pub.publish(velBack);
   sleep(5);
-  preparePoint = curPos;
+  preparePoint = curPos;// prepare position
   vel_pub.publish(velToPointMid);
   sleep(5);
   vel_pub.publish(velFoward);
@@ -95,7 +99,7 @@ int main(int argc, char **argv)
   {
       rule2 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque));
   }
-  midPoint = curPos;
+  midPoint = curPos;// mid position
   vel_pub.publish(velBack);
   sleep(5);
   vel_pub.publish(velToPointEnd);
@@ -105,9 +109,11 @@ int main(int argc, char **argv)
   {
       rule3 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque));
   }
-  endPoint = curPos;
+  endPoint = curPos;// end position
   vel_pub.publish(velBack);
   sleep(5);
+  vel_pub.publish(velStop);
+  sleep(2);
 
   // Plan the grind process. -- by kinematics -- bad code
   // You best use the joint_position control and then use the tool_vel_control by kinematics.
@@ -115,21 +121,43 @@ int main(int argc, char **argv)
   midPose = fkine(midPoint);
   endPose = fkine(endPoint);
   curPose = fkine(curPos);
-  preparePose = fkine(preparePoint);
-  vel1 = velGet(curPose,preparePose);
-  vel2 = velGet(preparePose,startPose);
-  vel3 = velGet(startPose,midPose);
-  vel4 = velGet(midPose,endPose);
+ // preparePose = fkine(preparePoint);
+ // vel1 = velGet(curPose,preparePose);
+//  vel2 = velGet(preparePose,startPose);
+//  vel3 = velGet(startPose,midPose);
+//  vel4 = velGet(midPose,endPose);
 
-  vel_pub.publish(vel1);
-  bool rule4 = false;
-  while (!rule4) {
-    rule4 = (!(reZero(curPose[0]-preparePose[0])||reZero(curPose[1]-preparePose[1])||reZero(curPose[2]-preparePose[2])||reZero(curPose[3]-preparePose[3])||reZero(curPose[4]-preparePose[4])||reZero(curPose[5]-preparePose[5])));
+//  vel_pub.publish(vel1);
+//  bool rule4 = false;
+//  while (!rule4) {
+//      bool r1,r2,r3;
+//      geometry_msgs::Vector3 linear;
+//      linear = preparePose.linear;
+//      r1 = reZero(curPos[0]-linear.x)==0;
+//      r2 = reZero(curPos[1]-linear.y)==0;
+//      r3 = reZero(curPos[2]-linear.z)==0;
+//      rule4 = (r1 && r2) &&  r3;
+//  }
+//  vel_pub.publish(velStop);
+//  sleep(1);
+
+  vel_pub.publish(velToPointEndInv);
+  sleep(5);
+  vel_pub.publish(velToPointMidInv);
+  sleep(5);
+  vel_pub.publish(velFoward);
+  rule1 = false;
+  while(!rule1)
+  {
+      rule1 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque));
   }
+  vel_pub.publish(vel3);
+  sleep(5);
+  vel_pub.publish(vel4);
+  sleep(5);
+  vel_pub.publish(velBack);
+  sleep(5);
   vel_pub.publish(velStop);
-  sleep(1);
-
-
 
   fout1.close();
   fout2.close();
@@ -138,11 +166,31 @@ int main(int argc, char **argv)
 
 geometry_msgs::Twist velGet(geometry_msgs::Twist pose1,geometry_msgs::Twist pose2)
 {
+    geometry_msgs::Vector3 linear1,linear2,linearVel;
+    geometry_msgs::Vector3 angular;
+    geometry_msgs::Twist vel;
+    double goTime = 5;
 
+    linear1 = pose1.linear;
+    linear2 = pose2.linear;
+
+    linearVel.x = (linear2.x - linear1.x)/goTime;
+    linearVel.y = (linear2.y - linear1.y)/goTime;
+    linearVel.z = (linear2.z - linear1.z)/goTime;
+    angular.x = 0;
+    angular.y = 0;
+    angular.z = 0;
+
+    vel.linear = linearVel;
+    vel.angular = angular;
+
+    return vel;
 }
 
 geometry_msgs::Twist fkine(std::vector<double> pos)
 {
+    // This forward kinematics ignore the rpy of pos.
+    // I set rpy all as zero.
     geometry_msgs::Vector3 linear;
     geometry_msgs::Vector3 angular;
     geometry_msgs::Twist posxyzrpy;
@@ -177,14 +225,18 @@ geometry_msgs::Twist fkine(std::vector<double> pos)
     linear.x = d6*(-c1*s5*c234+s1*c5)+d5*c1*s234+d4*s1+a3*c1*c23+a2*c1*c2;
     linear.y = d6*(-s1*s5*c234-c1*c5)+d5*s1*s234-d4*c1+a3*s1*c23+a2*s1*c2;
     linear.z = -d6*s234*s5-d5*c234+a3*s23+a2*s2+d1;
+    angular.x = 0;
+    angular.y = 0;
+    angular.z = 0;
     posxyzrpy.linear = linear;
+    posxyzrpy.angular = angular;
     // add the angular definition by curPos;
     return posxyzrpy;
 }
 
 double reZero(double x)
 {
-    if (fabs(x)<1e-8)
+    if (fabs(x)<1e-5)
     {
         x = 0;
     }
@@ -226,7 +278,7 @@ void setVelBack()
     double vx,vy,vz;
     double wx,wy,wz;
     vx = 0;
-    vy = 0.01;
+    vy = 0.005;
     vz = 0;
     wx = 0;
     wy = 0;
@@ -249,7 +301,7 @@ void setVelToPointMid()
     double wx,wy,wz;
     vx = 0;
     vy = 0;
-    vz = -0.01;
+    vz = -0.005;
     wx = 0;
     wy = 0;
     wz = 0;
@@ -269,7 +321,7 @@ void setVelToPointEnd()
     geometry_msgs::Vector3 angular;
     double vx,vy,vz;
     double wx,wy,wz;
-    vx = -0.01;
+    vx = -0.005;
     vy = 0;
     vz = 0;
     wx = 0;
@@ -283,6 +335,50 @@ void setVelToPointEnd()
     angular.z = wz;
     velToPointEnd.linear = linear;
     velToPointEnd.angular = angular;
+}
+
+void setVelToPointMidInv()
+{
+    geometry_msgs::Vector3 linear;
+    geometry_msgs::Vector3 angular;
+    double vx,vy,vz;
+    double wx,wy,wz;
+    vx = 0;
+    vy = 0;
+    vz = 0.005;
+    wx = 0;
+    wy = 0;
+    wz = 0;
+    linear.x = vx;
+    linear.y = vy;
+    linear.z = vz;
+    angular.x = wx;
+    angular.y = wy;
+    angular.z = wz;
+    velToPointMidInv.linear = linear;
+    velToPointMidInv.angular = angular;
+}
+
+void setVelToPointEndInv()
+{
+    geometry_msgs::Vector3 linear;
+    geometry_msgs::Vector3 angular;
+    double vx,vy,vz;
+    double wx,wy,wz;
+    vx = 0.005;
+    vy = 0;
+    vz = 0;
+    wx = 0;
+    wy = 0;
+    wz = 0;
+    linear.x = vx;
+    linear.y = vy;
+    linear.z = vz;
+    angular.x = wx;
+    angular.y = wy;
+    angular.z = wz;
+    velToPointEndInv.linear = linear;
+    velToPointEndInv.angular = angular;
 }
 
 void setVelStop()
