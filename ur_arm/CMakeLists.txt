@@ -84,6 +84,8 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   Joints.msg
+  PoseMatrix.msg
+  AllAng.msg
 )
 add_service_files(
   FILES

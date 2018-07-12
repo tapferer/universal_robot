@@ -10,11 +10,14 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Int8.h>
 #include "ur_arm/Joints.h"
+#include "ur_arm/my_func.h"
 #include <unistd.h>   // for function usleep(microseconds)
+#include <cstdlib>
 
 // Global Variables
 std::ofstream fout1("data/jointStates.txt");
 std::ofstream fout2("data/externalTorque.txt");
+std::ofstream fout3("src/universal_robot/ur_modern_driver/grinderWithDetect.py");
 std::vector<double> curPos;
 std::vector<double> curVel;
 std::vector<double> curEff;
@@ -22,7 +25,6 @@ geometry_msgs::Twist velFoward;
 geometry_msgs::Twist velBack;
 geometry_msgs::Twist velToPointMid;
 geometry_msgs::Twist velToPointEnd;
-geometry_msgs::Twist velToPointMidInv;
 geometry_msgs::Twist velToPointEndInv;
 geometry_msgs::Twist velStop;
 bool collisionHappen = false;
@@ -38,16 +40,15 @@ void setVelFoward();
 void setVelBack();
 void setVelToPointMid();
 void setVelToPointEnd();
-void setVelToPointMidInv();
 void setVelToPointEndInv();
 void setVelStop();
-double reZero(double x);
-geometry_msgs::Twist fkine(std::vector<double> pos);
 geometry_msgs::Twist velGet(geometry_msgs::Twist pose1, geometry_msgs::Twist pose2);
+void pycodeGenerate(std::vector<double> Point1, std::vector<double> Point2);// Generate the grinder py file
 
 // Main
 int main(int argc, char **argv)
 {
+  hi();
   ros::init(argc, argv, "vel_control");
   ros::NodeHandle n;
   ros::AsyncSpinner spinner(1);
@@ -67,18 +68,11 @@ int main(int argc, char **argv)
   setVelStop();
 
   bool rule1 = false;
-  bool rule2 = false;
+//  bool rule2 = false;
   bool rule3 = false;
   std::vector<double> startPoint;
-  std::vector<double> midPoint;
   std::vector<double> endPoint;
-  std::vector<double> preparePoint;
-  geometry_msgs::Twist startPose;
-  geometry_msgs::Twist midPose;
-  geometry_msgs::Twist endPose;
-  geometry_msgs::Twist curPose;
-  geometry_msgs::Twist preparePose;
-  geometry_msgs::Twist vel1,vel2,vel3,vel4;
+//  std::vector<double> endPoint;
 
   vel_pub.publish(velFoward);
   sleep(1);
@@ -91,19 +85,20 @@ int main(int argc, char **argv)
   startPoint = curPos;// start position
   vel_pub.publish(velBack);
   sleep(5);
-  preparePoint = curPos;// prepare position
-  vel_pub.publish(velToPointMid);
-  sleep(5);
-  vel_pub.publish(velFoward);
-  while(!rule2)
-  {
-      rule2 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque));
-  }
-  midPoint = curPos;// mid position
-  vel_pub.publish(velBack);
-  sleep(5);
+//  vel_pub.publish(velToPointMid);
+//  sleep(5);
+
+//  vel_pub.publish(velFoward);
+//  while(!rule2)
+//  {
+//      rule2 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque));
+//  }
+//  midPoint = curPos;// mid position
+//  vel_pub.publish(velBack);
+//  sleep(5);
   vel_pub.publish(velToPointEnd);
   sleep(5);
+
   vel_pub.publish(velFoward);
   while(!rule3)
   {
@@ -112,56 +107,234 @@ int main(int argc, char **argv)
   endPoint = curPos;// end position
   vel_pub.publish(velBack);
   sleep(5);
+  vel_pub.publish(velToPointEndInv);
+  sleep(5);
   vel_pub.publish(velStop);
   sleep(2);
 
-  // Plan the grind process. -- by kinematics -- bad code
-  // You best use the joint_position control and then use the tool_vel_control by kinematics.
-  startPose = fkine(startPoint);
-  midPose = fkine(midPoint);
-  endPose = fkine(endPoint);
-  curPose = fkine(curPos);
- // preparePose = fkine(preparePoint);
- // vel1 = velGet(curPose,preparePose);
-//  vel2 = velGet(preparePose,startPose);
-//  vel3 = velGet(startPose,midPose);
-//  vel4 = velGet(midPose,endPose);
-
-//  vel_pub.publish(vel1);
-//  bool rule4 = false;
-//  while (!rule4) {
-//      bool r1,r2,r3;
-//      geometry_msgs::Vector3 linear;
-//      linear = preparePose.linear;
-//      r1 = reZero(curPos[0]-linear.x)==0;
-//      r2 = reZero(curPos[1]-linear.y)==0;
-//      r3 = reZero(curPos[2]-linear.z)==0;
-//      rule4 = (r1 && r2) &&  r3;
-//  }
-//  vel_pub.publish(velStop);
-//  sleep(1);
-
-  vel_pub.publish(velToPointEndInv);
-  sleep(5);
-  vel_pub.publish(velToPointMidInv);
-  sleep(5);
-  vel_pub.publish(velFoward);
-  rule1 = false;
-  while(!rule1)
-  {
-      rule1 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque));
-  }
-  vel_pub.publish(vel3);
-  sleep(5);
-  vel_pub.publish(vel4);
-  sleep(5);
+  pycodeGenerate(startPoint,endPoint);
+  fout3.close();
+  ROS_INFO("I have generated the grinderWithDetect.py file.");
+  sleep(1);
+  system("rosrun ur_modern_driver grinderWithDetect.py");
+// Should I have to sleep some time here?
   vel_pub.publish(velBack);
   sleep(5);
   vel_pub.publish(velStop);
 
+  while(ros::ok()){};
   fout1.close();
   fout2.close();
+
   return 0;
+}
+
+void pycodeGenerate(std::vector<double> Point1, std::vector<double> Point2)
+{
+    ur_arm::PoseMatrix startPose;
+    ur_arm::PoseMatrix endPose;
+    ur_arm::AllAng allangForJudge;
+    int solutionNum = 0;
+    int Num = 0;
+
+    startPose = fKine(Point1);
+    endPose = fKine(Point2);
+
+    //% 判断始末构型位于哪组解系
+    allangForJudge = invKine(startPose);
+
+    // fabs(*)<0.01 is the best , do not change it.
+    for(int i=0;i<6;i++)
+    {
+        if (fabs(allangForJudge.ang1[i] - Point1[i])<0.001){Num += 10;}
+        else {Num = 0;break;}
+        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 1;}
+    }
+    for(int i=0;i<6;i++)
+    {
+        if (fabs(allangForJudge.ang2[i] - Point1[i])<0.001){Num += 10;}
+        else {Num = 0;break;}
+        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 2;}
+    }
+    for(int i=0;i<6;i++)
+    {
+        if (fabs(allangForJudge.ang3[i] - Point1[i])<0.001){Num += 10;}
+        else {Num = 0;break;}
+        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 3;}
+    }
+    for(int i=0;i<6;i++)
+    {
+        if (fabs(allangForJudge.ang4[i] - Point1[i])<0.001){Num += 10;}
+        else {Num = 0;break;}
+        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 4;}
+    }
+    for(int i=0;i<6;i++)
+    {
+        if (fabs(allangForJudge.ang5[i] - Point1[i])<0.001){Num += 10;}
+        else {Num = 0;break;}
+        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 5;}
+    }
+    for(int i=0;i<6;i++)
+    {
+        if (fabs(allangForJudge.ang6[i] - Point1[i])<0.001){Num += 10;}
+        else {Num = 0;break;}
+        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 6;}
+    }
+    for(int i=0;i<6;i++)
+    {
+        if (fabs(allangForJudge.ang7[i] - Point1[i])<0.001){Num += 10;}
+        else {Num = 0;break;}
+        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 7;}
+    }
+    for(int i=0;i<6;i++)
+    {
+        if (fabs(allangForJudge.ang8[i] - Point1[i])<0.001){Num += 10;}
+        else {Num = 0;break;}
+        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 8;}
+    }
+
+    if(solutionNum == 0)
+    {
+        std::cout<<"解系判断未成功！"<<std::endl;
+    }
+
+    //% 笛卡尔空间插值并生成关节角
+    int interNum = 100;// 插值个数
+    double moveTime = 5;// 打磨时长
+    double startTime = 5;
+    double deltaTime;
+    double tTime[interNum+1];
+    double AngAng[interNum+1][6];
+
+    ur_arm::PoseMatrix deltaPose;
+
+    double newTime;
+
+    deltaTime = moveTime/double(interNum);
+
+    for(int i=0;i<3;i++) deltaPose.p[i] = (endPose.p[i] - startPose.p[i])/double(interNum);
+    double deltax;
+    double deltay;
+    double deltaz;
+    deltax = deltaPose.p[0];
+    deltay = deltaPose.p[1];
+    deltaz = deltaPose.p[2];
+
+    newTime = startTime - deltaTime;
+
+    for (int i=0;i<(interNum+1);i++)
+    {
+        ur_arm::AllAng midAllAng;
+        ur_arm::PoseMatrix newPose;
+        double midAng_mark[7];
+
+        newPose.n = startPose.n;
+        newPose.o = startPose.o;
+        newPose.a = startPose.a;
+
+        newPose.p[0] = startPose.p[0] + i*deltax;
+        newPose.p[1] = startPose.p[1] + i*deltay;
+        newPose.p[2] = startPose.p[2] + i*deltaz;
+
+        showPoseMatrix(newPose);
+        midAllAng = invKine(newPose);
+
+        if(solutionNum == 1){ for(int i =0;i<6;i++){ midAng_mark[i] = midAllAng.ang1[i];}}
+        if(solutionNum == 2){ for(int i =0;i<6;i++){ midAng_mark[i] = midAllAng.ang2[i];}}
+        if(solutionNum == 3){ for(int i =0;i<6;i++){ midAng_mark[i] = midAllAng.ang3[i];}}
+        if(solutionNum == 4){ for(int i =0;i<6;i++){ midAng_mark[i] = midAllAng.ang4[i];}}
+        if(solutionNum == 5){ for(int i =0;i<6;i++){ midAng_mark[i] = midAllAng.ang5[i];}}
+        if(solutionNum == 6){ for(int i =0;i<6;i++){ midAng_mark[i] = midAllAng.ang6[i];}}
+        if(solutionNum == 7){ for(int i =0;i<6;i++){ midAng_mark[i] = midAllAng.ang7[i];}}
+        if(solutionNum == 8){ for(int i =0;i<6;i++){ midAng_mark[i] = midAllAng.ang8[i];}}
+
+   // cout<<midAllAng.ang1[0]<<","<<midAllAng.ang2[1]<<","<<midAllAng.ang3[2]<<","<<midAllAng.ang4[3]<<endl;
+        for(int k=0;k<6;k++)
+        {AngAng[i][k] = midAng_mark[k];}
+
+        newTime = newTime + deltaTime;
+        tTime[i] = newTime;
+    }
+
+
+    fout3<<"#!/usr/bin/env python\n";
+    fout3<<"import time\n";
+    fout3<<"import roslib; roslib.load_manifest(\'ur_modern_driver\')\n";
+    fout3<<"import rospy\n";
+    fout3<<"import actionlib\n";
+    fout3<<"import sys\n";
+    fout3<<"import subprocess\n";
+    fout3<<"import os\n";
+    fout3<<"from control_msgs.msg import *\n";
+    fout3<<"from trajectory_msgs.msg import *\n";
+    fout3<<"from sensor_msgs.msg import JointState\n";
+    fout3<<"from math import pi\n\n";
+    fout3<<"JOINT_NAMES = [\'shoulder_pan_joint\', \'shoulder_lift_joint\', \'elbow_joint\', \'wrist_1_joint\', \'wrist_2_joint\', \'wrist_3_joint\']\n\n";
+    for(int i=0;i<(interNum+1);i++)
+    {
+        fout3<<"Q";
+        fout3<<(i+1);
+        fout3<<" = [";
+        fout3<<AngAng[i][0]<<", ";
+        fout3<<AngAng[i][1]<<", ";
+        fout3<<AngAng[i][2]<<", ";
+        fout3<<AngAng[i][3]<<", ";
+        fout3<<AngAng[i][4]<<", ";
+        fout3<<AngAng[i][5]<<"]\n";
+    }
+    fout3<<"\n\nclient = None\n";
+    fout3<<"def move():\n";
+    fout3<<"    global joints_pos\n";
+    fout3<<"    g = FollowJointTrajectoryGoal()\n";
+    fout3<<"    g.trajectory = JointTrajectory()\n";
+    fout3<<"    g.trajectory.joint_names = JOINT_NAMES\n";
+    fout3<<"    try:\n";
+    fout3<<"        joint_states = rospy.wait_for_message(\"joint_states\", JointState)\n";
+    fout3<<"        joints_pos = joint_states.position\n";
+    fout3<<"        g.trajectory.points = [\n";
+    fout3<<"            JointTrajectoryPoint(positions=joints_pos, velocities=[0]*6, time_from_start=rospy.Duration(0.0)),\n";
+
+    for(int i=0;i<(interNum);i++)
+    {
+    fout3<<"            JointTrajectoryPoint(positions=Q";
+    fout3<<(i+1)<<", velocities=[0]*6, time_from_start=rospy.Duration(";
+    fout3<<tTime[i]<<")),\n";
+    }
+
+    fout3<<"            JointTrajectoryPoint(positions=Q";
+    fout3<<(interNum+1)<<", velocities=[0]*6, time_from_start=rospy.Duration(";
+    fout3<<tTime[interNum]<<"))]\n";
+    fout3<<"        client.send_goal(g)\n";
+    fout3<<"        client.wait_for_result()\n";
+    fout3<<"    except KeyboardInterrupt:\n";
+    fout3<<"        client.cancel_goal()\n";
+    fout3<<"        raise\n";
+    fout3<<"    except:\n";
+    fout3<<"        raise\n\n";
+    fout3<<"def main():\n";
+    fout3<<"    global client\n";
+    fout3<<"    try:\n";
+    fout3<<"        rospy.init_node(\"simple_move\", anonymous=True, disable_signals=True)\n";
+    fout3<<"        client = actionlib.SimpleActionClient('arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)\n";
+    fout3<<"        print \"Waiting for server...\"\n";
+    fout3<<"        client.wait_for_server()\n";
+    fout3<<"        print \"Connected to server\"\n";
+    fout3<<"        child1 = subprocess.Popen(\'rostopic echo /joint_states >1.txt\',shell=True)\n";
+    fout3<<"        move()\n";
+    fout3<<"        print \"Trajectory finished\"\n";
+    fout3<<"        time.sleep(0.5)\n";
+    fout3<<"        child2 = subprocess.Popen(\'cp 1.txt data/polish.txt\',shell=True)\n";
+    fout3<<"        time.sleep(0.5)\n";
+    fout3<<"        child3 = subprocess.Popen(\'rm 1.txt\',shell=True)\n";
+    fout3<<"        time.sleep(0.5)\n";
+    fout3<<"        if True:\n";
+    fout3<<"            child1.kill()\n";
+    fout3<<"            child2.kill()\n";
+    fout3<<"            child3.kill()\n";
+    fout3<<"    except KeyboardInterrupt:\n";
+    fout3<<"        rospy.signal_shutdown(\"KeyboardInterrupt\")\n";
+    fout3<<"        raise\n\n";
+    fout3<<"if __name__ == \'__main__\': main()\n";
 }
 
 geometry_msgs::Twist velGet(geometry_msgs::Twist pose1,geometry_msgs::Twist pose2)
@@ -187,67 +360,10 @@ geometry_msgs::Twist velGet(geometry_msgs::Twist pose1,geometry_msgs::Twist pose
     return vel;
 }
 
-geometry_msgs::Twist fkine(std::vector<double> pos)
-{
-    // This forward kinematics ignore the rpy of pos.
-    // I set rpy all as zero.
-    geometry_msgs::Vector3 linear;
-    geometry_msgs::Vector3 angular;
-    geometry_msgs::Twist posxyzrpy;
-    double d1=0.0892;
-    double a2=-0.425;
-    double a3=-0.39243;
-    double d4=0.109;
-    double d5=0.093;
-    double d6=0.082;
-    double theta1,theta2,theta3,theta4,theta5,theta6,c1,c2,c3,c4,c5,c6,s1,s2,s3,s4,s5,s6,c234,s234,c23,s23;
-
-    theta1 = pos[0];
-    theta2 = pos[1];
-    theta3 = pos[2];
-    theta4 = pos[3];
-    theta5 = pos[4];
-    theta6 = pos[5];
-
-    c1=cos(theta1);
-    s1=sin(theta1);
-    c2=cos(theta2);
-    s2=sin(theta2);
-    c3=cos(theta3);
-    s3=sin(theta3);
-    c4=cos(theta4);
-    s4=sin(theta4);
-    c5=cos(theta5);
-    s5=sin(theta5);
-    c6=cos(theta6);
-    s6=sin(theta6);
-
-    linear.x = d6*(-c1*s5*c234+s1*c5)+d5*c1*s234+d4*s1+a3*c1*c23+a2*c1*c2;
-    linear.y = d6*(-s1*s5*c234-c1*c5)+d5*s1*s234-d4*c1+a3*s1*c23+a2*s1*c2;
-    linear.z = -d6*s234*s5-d5*c234+a3*s23+a2*s2+d1;
-    angular.x = 0;
-    angular.y = 0;
-    angular.z = 0;
-    posxyzrpy.linear = linear;
-    posxyzrpy.angular = angular;
-    // add the angular definition by curPos;
-    return posxyzrpy;
-}
-
-double reZero(double x)
-{
-    if (fabs(x)<1e-5)
-    {
-        x = 0;
-    }
-    return x;
-}
-
 void velCompute(ur_arm::Joints exTorque)
 {
     torque = exTorque;
 }
-
 
 void setVelFoward()
 {
@@ -335,28 +451,6 @@ void setVelToPointEnd()
     angular.z = wz;
     velToPointEnd.linear = linear;
     velToPointEnd.angular = angular;
-}
-
-void setVelToPointMidInv()
-{
-    geometry_msgs::Vector3 linear;
-    geometry_msgs::Vector3 angular;
-    double vx,vy,vz;
-    double wx,wy,wz;
-    vx = 0;
-    vy = 0;
-    vz = 0.005;
-    wx = 0;
-    wy = 0;
-    wz = 0;
-    linear.x = vx;
-    linear.y = vy;
-    linear.z = vz;
-    angular.x = wx;
-    angular.y = wy;
-    angular.z = wz;
-    velToPointMidInv.linear = linear;
-    velToPointMidInv.angular = angular;
 }
 
 void setVelToPointEndInv()
