@@ -113,6 +113,20 @@ int main(int argc, char **argv)
   vel_pub.publish(velStop);
   sleep(1);
 
+//  startPoint.push_back(1);
+//  startPoint.push_back(2);
+//  startPoint.push_back(3);
+//  startPoint.push_back(1);
+//  startPoint.push_back(2);
+//  startPoint.push_back(3);
+
+//  endPoint.push_back(1.1);
+//  endPoint.push_back(2.1);
+//  endPoint.push_back(3.1);
+//  endPoint.push_back(1.1);
+//  endPoint.push_back(2.1);
+//  endPoint.push_back(3.1);
+
   pycodeGenerate(startPoint,endPoint);
   fout3.close();
   ROS_INFO("I have generated the grinderWithDetect.py file.");
