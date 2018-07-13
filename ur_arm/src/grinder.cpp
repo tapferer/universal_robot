@@ -30,7 +30,7 @@ geometry_msgs::Twist velStop;
 bool collisionHappen = false;
 bool rule = false;// the collision judging rule.
 ur_arm::Joints torque;
-double collisionTorque = 7.5;
+double collisionTorque =16;
 
 // Function definition
 void recordJointStateToTxt(sensor_msgs::JointState curState);
@@ -65,6 +65,7 @@ int main(int argc, char **argv)
   setVelBack();
   setVelToPointMid();
   setVelToPointEnd();
+  setVelToPointEndInv();
   setVelStop();
 
   bool rule1 = false;
@@ -97,7 +98,7 @@ int main(int argc, char **argv)
 //  vel_pub.publish(velBack);
 //  sleep(5);
   vel_pub.publish(velToPointEnd);
-  sleep(5);
+  sleep(3);
 
   vel_pub.publish(velFoward);
   while(!rule3)
@@ -108,19 +109,15 @@ int main(int argc, char **argv)
   vel_pub.publish(velBack);
   sleep(5);
   vel_pub.publish(velToPointEndInv);
-  sleep(5);
+  sleep(3);
   vel_pub.publish(velStop);
-  sleep(2);
+  sleep(1);
 
   pycodeGenerate(startPoint,endPoint);
   fout3.close();
   ROS_INFO("I have generated the grinderWithDetect.py file.");
-  sleep(1);
-  system("rosrun ur_modern_driver grinderWithDetect.py");
+ // system("rosrun ur_modern_driver grinderWithDetect.py");
 // Should I have to sleep some time here?
-  vel_pub.publish(velBack);
-  sleep(5);
-  vel_pub.publish(velStop);
 
   while(ros::ok()){};
   fout1.close();
@@ -154,43 +151,43 @@ void pycodeGenerate(std::vector<double> Point1, std::vector<double> Point2)
     {
         if (fabs(allangForJudge.ang2[i] - Point1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
-        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 2;}
+        if((Num == 60)&&(allangForJudge.ang2[6]==1)){solutionNum = 2;}
     }
     for(int i=0;i<6;i++)
     {
         if (fabs(allangForJudge.ang3[i] - Point1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
-        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 3;}
+        if((Num == 60)&&(allangForJudge.ang3[6]==1)){solutionNum = 3;}
     }
     for(int i=0;i<6;i++)
     {
         if (fabs(allangForJudge.ang4[i] - Point1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
-        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 4;}
+        if((Num == 60)&&(allangForJudge.ang4[6]==1)){solutionNum = 4;}
     }
     for(int i=0;i<6;i++)
     {
         if (fabs(allangForJudge.ang5[i] - Point1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
-        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 5;}
+        if((Num == 60)&&(allangForJudge.ang5[6]==1)){solutionNum = 5;}
     }
     for(int i=0;i<6;i++)
     {
         if (fabs(allangForJudge.ang6[i] - Point1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
-        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 6;}
+        if((Num == 60)&&(allangForJudge.ang6[6]==1)){solutionNum = 6;}
     }
     for(int i=0;i<6;i++)
     {
         if (fabs(allangForJudge.ang7[i] - Point1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
-        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 7;}
+        if((Num == 60)&&(allangForJudge.ang7[6]==1)){solutionNum = 7;}
     }
     for(int i=0;i<6;i++)
     {
         if (fabs(allangForJudge.ang8[i] - Point1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
-        if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 8;}
+        if((Num == 60)&&(allangForJudge.ang8[6]==1)){solutionNum = 8;}
     }
 
     if(solutionNum == 0)
@@ -236,7 +233,6 @@ void pycodeGenerate(std::vector<double> Point1, std::vector<double> Point2)
         newPose.p[1] = startPose.p[1] + i*deltay;
         newPose.p[2] = startPose.p[2] + i*deltaz;
 
-        showPoseMatrix(newPose);
         midAllAng = invKine(newPose);
 
         if(solutionNum == 1){ for(int i =0;i<6;i++){ midAng_mark[i] = midAllAng.ang1[i];}}
@@ -314,8 +310,8 @@ void pycodeGenerate(std::vector<double> Point1, std::vector<double> Point2)
     fout3<<"def main():\n";
     fout3<<"    global client\n";
     fout3<<"    try:\n";
-    fout3<<"        rospy.init_node(\"simple_move\", anonymous=True, disable_signals=True)\n";
-    fout3<<"        client = actionlib.SimpleActionClient('arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)\n";
+    fout3<<"        rospy.init_node(\"grinder_move\", anonymous=True, disable_signals=True)\n";
+    fout3<<"        client = actionlib.SimpleActionClient('follow_joint_trajectory', FollowJointTrajectoryAction)\n";
     fout3<<"        print \"Waiting for server...\"\n";
     fout3<<"        client.wait_for_server()\n";
     fout3<<"        print \"Connected to server\"\n";
@@ -437,7 +433,7 @@ void setVelToPointEnd()
     geometry_msgs::Vector3 angular;
     double vx,vy,vz;
     double wx,wy,wz;
-    vx = -0.005;
+    vx = -0.02;
     vy = 0;
     vz = 0;
     wx = 0;
@@ -459,7 +455,7 @@ void setVelToPointEndInv()
     geometry_msgs::Vector3 angular;
     double vx,vy,vz;
     double wx,wy,wz;
-    vx = 0.005;
+    vx = 0.02;
     vy = 0;
     vz = 0;
     wx = 0;

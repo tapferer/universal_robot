@@ -96,7 +96,7 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
     double u1_2=0.5823;
     double u2_2=0.6754;
     double K = 10;
-    double K2 = 130; // change this
+    double K2 = 125; // change this
     double dt = 0.008;
     double terminalTool = 1.38;
     double pi = 3.14159265;
