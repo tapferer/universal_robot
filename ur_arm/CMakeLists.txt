@@ -183,6 +183,10 @@ add_executable(
   grinder
   src/grinder.cpp
 )
+add_executable(
+  dataRecorder
+  src/dataRecorder.cpp
+)
 
 target_link_libraries(
   node
@@ -200,6 +204,10 @@ target_link_libraries(
   grinder
   ${catkin_LIBRARIES}
 )
+target_link_libraries(
+  dataRecorder
+  ${catkin_LIBRARIES}
+)
 
 add_dependencies(
   node
@@ -215,6 +223,10 @@ add_dependencies(
 )
 add_dependencies(
   grinder
+  ${catkin_EXPORTED_TARGETS}
+)
+add_dependencies(
+  dataRecorder
   ${catkin_EXPORTED_TARGETS}
 )
 ## Rename C++ executable without prefix
