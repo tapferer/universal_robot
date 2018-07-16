@@ -14,6 +14,9 @@
 #include <unistd.h>   // for function usleep(microseconds)
 #include <cstdlib>
 
+using std::cout;
+using std::endl;
+
 // Global Variables
 std::ofstream fout1("data/jointStates.txt");
 std::ofstream fout2("data/externalTorque.txt");
@@ -30,7 +33,7 @@ geometry_msgs::Twist velStop;
 bool collisionHappen = false;
 bool rule = false;// the collision judging rule.
 ur_arm::Joints torque;
-double collisionTorque =16;
+double collisionTorque =10.4;
 
 // Function definition
 void recordJointStateToTxt(sensor_msgs::JointState curState);
@@ -101,6 +104,7 @@ int main(int argc, char **argv)
   sleep(3);
 
   vel_pub.publish(velFoward);
+  sleep(1);
   while(!rule3)
   {
       rule3 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque));
@@ -145,11 +149,19 @@ void pycodeGenerate(std::vector<double> Point1, std::vector<double> Point2)
     ur_arm::PoseMatrix startPose;
     ur_arm::PoseMatrix endPose;
     ur_arm::AllAng allangForJudge;
+    std::vector<double> P1;
+    std::vector<double> P2;
     int solutionNum = 0;
     int Num = 0;
 
-    startPose = fKine(Point1);
-    endPose = fKine(Point2);
+    for(int i = 0;i<6;i++)
+        {
+        P1.push_back(thetaMod(Point1[i]));
+        P2.push_back(thetaMod(Point2[i]));
+    }
+
+    startPose = fKine(P1);
+    endPose = fKine(P2);
 
     //% 判断始末构型位于哪组解系
     allangForJudge = invKine(startPose);
@@ -157,49 +169,49 @@ void pycodeGenerate(std::vector<double> Point1, std::vector<double> Point2)
     // fabs(*)<0.01 is the best , do not change it.
     for(int i=0;i<6;i++)
     {
-        if (fabs(allangForJudge.ang1[i] - Point1[i])<0.001){Num += 10;}
+        if (fabs(allangForJudge.ang1[i] - P1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
         if((Num == 60)&&(allangForJudge.ang1[6]==1)){solutionNum = 1;}
     }
     for(int i=0;i<6;i++)
     {
-        if (fabs(allangForJudge.ang2[i] - Point1[i])<0.001){Num += 10;}
+        if (fabs(allangForJudge.ang2[i] - P1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
         if((Num == 60)&&(allangForJudge.ang2[6]==1)){solutionNum = 2;}
     }
     for(int i=0;i<6;i++)
     {
-        if (fabs(allangForJudge.ang3[i] - Point1[i])<0.001){Num += 10;}
+        if (fabs(allangForJudge.ang3[i] - P1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
         if((Num == 60)&&(allangForJudge.ang3[6]==1)){solutionNum = 3;}
     }
     for(int i=0;i<6;i++)
     {
-        if (fabs(allangForJudge.ang4[i] - Point1[i])<0.001){Num += 10;}
+        if (fabs(allangForJudge.ang4[i] - P1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
         if((Num == 60)&&(allangForJudge.ang4[6]==1)){solutionNum = 4;}
     }
     for(int i=0;i<6;i++)
     {
-        if (fabs(allangForJudge.ang5[i] - Point1[i])<0.001){Num += 10;}
+        if (fabs(allangForJudge.ang5[i] - P1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
         if((Num == 60)&&(allangForJudge.ang5[6]==1)){solutionNum = 5;}
     }
     for(int i=0;i<6;i++)
     {
-        if (fabs(allangForJudge.ang6[i] - Point1[i])<0.001){Num += 10;}
+        if (fabs(allangForJudge.ang6[i] - P1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
         if((Num == 60)&&(allangForJudge.ang6[6]==1)){solutionNum = 6;}
     }
     for(int i=0;i<6;i++)
     {
-        if (fabs(allangForJudge.ang7[i] - Point1[i])<0.001){Num += 10;}
+        if (fabs(allangForJudge.ang7[i] - P1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
         if((Num == 60)&&(allangForJudge.ang7[6]==1)){solutionNum = 7;}
     }
     for(int i=0;i<6;i++)
     {
-        if (fabs(allangForJudge.ang8[i] - Point1[i])<0.001){Num += 10;}
+        if (fabs(allangForJudge.ang8[i] - P1[i])<0.001){Num += 10;}
         else {Num = 0;break;}
         if((Num == 60)&&(allangForJudge.ang8[6]==1)){solutionNum = 8;}
     }

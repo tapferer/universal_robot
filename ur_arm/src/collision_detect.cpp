@@ -14,7 +14,6 @@
 #include <unistd.h>   // for function usleep(microseconds)
 
 // Global Variables
-double max = 0;
 ur_arm::Joints exTorque;
 Eigen::MatrixXf exTorque2(2,1);
 Eigen::MatrixXf A(2,1);
@@ -83,23 +82,24 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
     Eigen::MatrixXf Gq(2,1);
     Eigen::MatrixXf Mq(2,2);
     // the parameter of ur5
-    double m1 = 0.8009;
-    double m2 = 0.5515;
-    double l1_star = 0.1320;
-    double l2_star = 0.2926;
+    double m1 = 0.9959;
+    double m2 = 0.2678;
+    double l1_star = 0.2911;
+    double l2_star = 0.7986;
     double l1 = 0.425;
-    double l2 = 0.39243;
-    double l3 = 0.093;
+//    double l2 = 0.39243;
+//    double l3 = 0.093;
     double g = 9.793;
-    double u1_1=0.2973;
-    double u2_1=0.6849;
-    double u1_2=0.5823;
-    double u2_2=0.6754;
+    double u1_1=0.1878;
+    double u2_1=0.8199;
+    double u1_2=0.7381;
+    double u2_2=0.6355;
     double K = 10;
-    double K2 = 125; // change this
+    double K2 = 125;
     double dt = 0.008;
-    double terminalTool = 1.38;
-    double pi = 3.14159265;
+//    double terminalTool = 1.5;//1.38
+//    double pi = 3.14159265;
+    double max = 0;
 
     pos2(0,0) = curPos[1];
     pos2(1,0) = curPos[2];
@@ -128,8 +128,10 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
     torqueFric(1,0) = u1_2*curVel[2] + u2_2*signed(reZero(curVel[2]));
 
     torque.base = 0;
-    torque.shoulder = fabs(K2*(exTorque2(0,0) - torqueFric(0,0)) + terminalTool*g*(l1*cos(curPos[1]) + l2*cos(curPos[1]+curPos[2]) + l3*cos(curPos[1]+curPos[2]+curPos[3]+pi/2)));
-    torque.elbow = fabs(K2*(exTorque2(1,0) - torqueFric(1,0)) + terminalTool*g*(l2*cos(curPos[1]+curPos[2]) + l3*cos(curPos[1]+curPos[2]+curPos[3]+pi/2)));
+//    torque.shoulder = fabs(K2*(exTorque2(0,0) - torqueFric(0,0)) + terminalTool*g*(l1*cos(curPos[1]) + l2*cos(curPos[1]+curPos[2]) + l3*cos(curPos[1]+curPos[2]+curPos[3]+pi/2)));
+//    torque.elbow = fabs(K2*(exTorque2(1,0) - torqueFric(1,0)) + terminalTool*g*(l2*cos(curPos[1]+curPos[2]) + l3*cos(curPos[1]+curPos[2]+curPos[3]+pi/2)));
+    torque.shoulder = fabs(K2*(exTorque2(0,0) - torqueFric(0,0)));
+    torque.elbow = fabs(K2*(exTorque2(1,0) - torqueFric(1,0)));
     if (fabs(torque.shoulder) > max)
     {
         max = fabs(torque.shoulder);

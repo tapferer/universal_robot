@@ -54,7 +54,7 @@ def main():
     global client
     try:
         rospy.init_node("simple_move", anonymous=True, disable_signals=True)
-        client = actionlib.SimpleActionClient('arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+        client = actionlib.SimpleActionClient('follow_joint_trajectory', FollowJointTrajectoryAction)
         print "Waiting for server..."
         client.wait_for_server()
         print "Connected to server"
