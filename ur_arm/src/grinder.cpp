@@ -33,7 +33,7 @@ geometry_msgs::Twist velStop;
 bool collisionHappen = false;
 bool rule = false;// the collision judging rule.
 ur_arm::Joints torque;
-double collisionTorque =10.4;
+double collisionTorque =1.5;
 
 // Function definition
 void recordJointStateToTxt(sensor_msgs::JointState curState);
