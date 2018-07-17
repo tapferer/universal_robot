@@ -105,7 +105,7 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
 //    double u1_2=0.7381;
 //    double u2_2=0.6355;
     double K = 10;
-    double K2 = 125;
+    double K2 = 1;
     double dt = 0.008;
 //    double terminalTool = 1.5;//1.38
 //    double pi = 3.14159265;
@@ -132,7 +132,8 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
     Gq(1,0) = -m2*g*l2_star*cos(pos2(0,0)+pos2(1,0));
 
     deltaA = (jointTorque2 + Cq.transpose()*vel2 - Gq - exTorque2) * dt;
-    exTorque2 = K*(A + deltaA - Mq*vel2);
+    A = A + deltaA;
+    exTorque2 = K*(A - Mq*vel2);
 
     torqueFric(0,0) = u1_1*curVel[1] + u2_1*signed(reZero(curVel[1]));
     torqueFric(1,0) = u1_2*curVel[2] + u2_2*signed(reZero(curVel[2]));
