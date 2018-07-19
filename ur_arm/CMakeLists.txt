@@ -187,6 +187,10 @@ add_executable(
   dataRecorder
   src/dataRecorder.cpp
 )
+add_executable(
+  parameterEstimate
+  src/parameterEstimate.cpp
+)
 
 target_link_libraries(
   node
@@ -208,6 +212,10 @@ target_link_libraries(
   dataRecorder
   ${catkin_LIBRARIES}
 )
+target_link_libraries(
+  parameterEstimate
+  ${catkin_LIBRARIES}
+)
 
 add_dependencies(
   node
@@ -229,6 +237,11 @@ add_dependencies(
   dataRecorder
   ${catkin_EXPORTED_TARGETS}
 )
+add_dependencies(
+  parameterEstimate
+  ${catkin_EXPORTED_TARGETS}
+)
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use

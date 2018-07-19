@@ -82,9 +82,9 @@ int main(int argc, char **argv)
   chatter_pub.publish(vel_stop);
   sleep(1);
 
-  chatter_pub.publish(vel_moveB_joint2);
-  sleep(1);
   chatter_pub.publish(vel_moveF_joint2);
+  sleep(1);
+  chatter_pub.publish(vel_moveB_joint2);
   sleep(1);
   chatter_pub.publish(vel_stop);
   sleep(1);
