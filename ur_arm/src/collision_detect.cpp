@@ -81,31 +81,31 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
     Eigen::MatrixXf Cq(2,2);
     Eigen::MatrixXf Gq(2,1);
     Eigen::MatrixXf Mq(2,2);
-    // the parameter of ur5
-    double m1 = 0.8009;
-    double m2 = 0.5515;
-    double l1_star = 0.1320;
-    double l2_star = 0.2926;
+//    // the parameter of ur5
+//    double m1 = 0.8009;
+//    double m2 = 0.5515;
+//    double l1_star = 0.1320;
+//    double l2_star = 0.2926;
+//    double u1_1=0.2973;
+//    double u2_1=0.6849;
+//    double u1_2=0.5823;
+//    double u2_2=0.6754;
+
 //    // the parameter with grinder
-//    double m1 = 0.9959;
-//    double m2 = 0.2678;
-//    double l1_star = 0.2911;
-//    double l2_star = 0.7986;
+    double m1 = 0.4254;
+    double m2 = 0.3755;
+    double l1_star = 0.5689;
+    double l2_star = 0.5818;
+    double u1_1=0.5822;
+    double u2_1=0.5286;
+    double u1_2=0.6702;
+    double u2_2=0.6448;
+
+
     double l1 = 0.425;
-//    double l2 = 0.39243;
-//    double l3 = 0.093;
     double g = 9.793;
-    double u1_1=0.2973;
-    double u2_1=0.6849;
-    double u1_2=0.5823;
-    double u2_2=0.6754;
-//    // the parameter with grinder
-//    double u1_1=0.1878;
-//    double u2_1=0.8199;
-//    double u1_2=0.7381;
-//    double u2_2=0.6355;
     double K = 10;
-    double K2 = 1;
+    double K2 = 10;
     double dt = 0.008;
 //    double terminalTool = 1.5;//1.38
 //    double pi = 3.14159265;
@@ -138,7 +138,7 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
     torqueFric(0,0) = u1_1*curVel[1] + u2_1*signed(reZero(curVel[1]));
     torqueFric(1,0) = u1_2*curVel[2] + u2_2*signed(reZero(curVel[2]));
 
-    torque.base = 0;
+    torque.base = fabs(K2*curEff[0]);
 //    torque.shoulder = fabs(K2*(exTorque2(0,0) - torqueFric(0,0)) + terminalTool*g*(l1*cos(curPos[1]) + l2*cos(curPos[1]+curPos[2]) + l3*cos(curPos[1]+curPos[2]+curPos[3]+pi/2)));
 //    torque.elbow = fabs(K2*(exTorque2(1,0) - torqueFric(1,0)) + terminalTool*g*(l2*cos(curPos[1]+curPos[2]) + l3*cos(curPos[1]+curPos[2]+curPos[3]+pi/2)));
     torque.shoulder = fabs(K2*(exTorque2(0,0) - torqueFric(0,0)));
@@ -154,7 +154,7 @@ ur_arm::Joints computeExTorque(std::vector<double> curPos, std::vector<double> c
     torque.wrist1 = 0;
     torque.wrist2 = 0;
     torque.wrist3 = 0;
-    ROS_INFO("External Torque of elbow =  [%lf].",torque.elbow);
+    ROS_INFO("External Torque of base =  [%lf].",torque.base);
 
     return torque;
 }

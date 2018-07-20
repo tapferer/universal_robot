@@ -14,7 +14,7 @@ from math import pi
 
 JOINT_NAMES = ['shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint',
                'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint']
-Q1 = [1.95,-1.31,2.24,-2.5,-1.59,-0.24]
+Q1 = [1.95,-1.31,2.24,-2.5, -1.59, -0.24]
     
 client = None
 

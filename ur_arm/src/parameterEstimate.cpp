@@ -7,6 +7,7 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Int8.h>
+#include <unistd.h>   // for function usleep(microseconds)
 #include "ur_arm/Joints.h"
 
 int main(int argc, char **argv)
@@ -76,25 +77,63 @@ int main(int argc, char **argv)
   ROS_INFO("Start.");
 
   chatter_pub.publish(vel_moveF_joint1);
-  sleep(1);
+  usleep(800000);
   chatter_pub.publish(vel_moveB_joint1);
-  sleep(1);
+  usleep(800000);
+  chatter_pub.publish(vel_moveF_joint1);
+  usleep(600000);
+  chatter_pub.publish(vel_moveB_joint1);
+  usleep(600000);
+  chatter_pub.publish(vel_moveF_joint1);
+  usleep(600000);
+  chatter_pub.publish(vel_moveB_joint1);
+  usleep(600000);
+  chatter_pub.publish(vel_moveF_joint1);
+  usleep(600000);
+  chatter_pub.publish(vel_moveB_joint1);
+  usleep(600000);
+  chatter_pub.publish(vel_moveF_joint1);
+  usleep(600000);
+  chatter_pub.publish(vel_moveB_joint1);
+  usleep(600000);
+  chatter_pub.publish(vel_moveF_joint1);
+  usleep(600000);
+  chatter_pub.publish(vel_moveB_joint1);
+  usleep(600000);
+  chatter_pub.publish(vel_moveF_joint1);
+  usleep(600000);
   chatter_pub.publish(vel_stop);
   sleep(1);
 
   chatter_pub.publish(vel_moveF_joint2);
   sleep(1);
   chatter_pub.publish(vel_moveB_joint2);
-  sleep(1);
+  usleep(800000);
+  chatter_pub.publish(vel_moveF_joint2);
+  usleep(800000);
+  chatter_pub.publish(vel_moveB_joint2);
+  usleep(800000);
+  chatter_pub.publish(vel_moveF_joint2);
+  usleep(800000);
+  chatter_pub.publish(vel_moveB_joint2);
+  usleep(800000);
+  chatter_pub.publish(vel_moveF_joint2);
+  usleep(800000);
+  chatter_pub.publish(vel_moveB_joint2);
+  usleep(800000);
+  chatter_pub.publish(vel_moveF_joint2);
+  usleep(800000);
+  chatter_pub.publish(vel_moveB_joint2);
+  usleep(800000);
   chatter_pub.publish(vel_stop);
   sleep(1);
 
-  chatter_pub.publish(vel_move_joint1);
-  sleep(5);
-  chatter_pub.publish(vel_move_joint2);
-  sleep(5);
-  chatter_pub.publish(vel_stop);
-  sleep(2);
+//  chatter_pub.publish(vel_move_joint1);
+//  sleep(5);
+//  chatter_pub.publish(vel_move_joint2);
+//  sleep(5);
+//  chatter_pub.publish(vel_stop);
+//  sleep(2);
 
   ROS_INFO("End.");
 

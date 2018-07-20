@@ -20,7 +20,7 @@ using std::endl;
 // Global Variables
 std::ofstream fout1("data/jointStates.txt");
 std::ofstream fout2("data/externalTorque.txt");
-std::ofstream fout3("src/universal_robot/ur_modern_driver/grinderWithDetect.py");
+std::ofstream fout3("catkin_ws/src/universal_robot/ur_modern_driver/grinderWithDetect.py");
 std::vector<double> curPos;
 std::vector<double> curVel;
 std::vector<double> curEff;
@@ -33,7 +33,7 @@ geometry_msgs::Twist velStop;
 bool collisionHappen = false;
 bool rule = false;// the collision judging rule.
 ur_arm::Joints torque;
-double collisionTorque =1.5;
+double collisionTorque =10;
 
 // Function definition
 void recordJointStateToTxt(sensor_msgs::JointState curState);
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
   // Get 3 key position by collision detect.
   while(!rule1)
   {
-      rule1 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque));
+      rule1 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque)||(torque.base>10));
   }
   startPoint = curPos;// start position
   vel_pub.publish(velBack);
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
   sleep(1);
   while(!rule3)
   {
-      rule3 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque));
+      rule3 = ((torque.shoulder>collisionTorque) || (torque.elbow>collisionTorque)||(torque.base>10));
   }
   endPoint = curPos;// end position
   vel_pub.publish(velBack);
@@ -256,7 +256,7 @@ void pycodeGenerate(std::vector<double> Point1, std::vector<double> Point2)
         newPose.a = startPose.a;
 
         newPose.p[0] = startPose.p[0] + i*deltax;
-        newPose.p[1] = startPose.p[1] + i*deltay;
+        newPose.p[1] = startPose.p[1] + i*deltay + 0.0015 + double(interNum - i)/double(interNum)*0.001;
         newPose.p[2] = startPose.p[2] + i*deltaz;
 
         midAllAng = invKine(newPose);
