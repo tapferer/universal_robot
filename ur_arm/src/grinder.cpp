@@ -20,7 +20,7 @@ using std::endl;
 // Global Variables
 std::ofstream fout1("data/jointStates.txt");
 std::ofstream fout2("data/externalTorque.txt");
-std::ofstream fout3("catkin_ws/src/universal_robot/ur_modern_driver/grinderWithDetect.py");
+std::ofstream fout3("luhao_ws/src/universal_robot/ur_modern_driver/grinderWithDetect.py");
 std::vector<double> curPos;
 std::vector<double> curVel;
 std::vector<double> curEff;
@@ -256,7 +256,7 @@ void pycodeGenerate(std::vector<double> Point1, std::vector<double> Point2)
         newPose.a = startPose.a;
 
         newPose.p[0] = startPose.p[0] + i*deltax;
-        newPose.p[1] = startPose.p[1] + i*deltay + 0.0015 + double(interNum - i)/double(interNum)*0.001;
+        newPose.p[1] = startPose.p[1] + i*deltay;
         newPose.p[2] = startPose.p[2] + i*deltaz;
 
         midAllAng = invKine(newPose);
